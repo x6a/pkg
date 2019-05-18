@@ -26,6 +26,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const PriorityLow string = "LOW"
+const PriorityMedium string = "MEDIUM"
+const PriorityHigh string = "HIGH"
+
+const SeverityTrace string = "TRACE"
+const SeverityDebug string = "DEBUG"
+const SeverityInfo string = "INFO"
+const SeverityWarning string = "WARNING"
+const SeverityError string = "ERROR"
+const SeverityFatal string = "FATAL"
+const SeverityPanic string = "PANIC"
+
 type ErrorStatus struct {
 	Message  string `json:"message"`
 	Type     string `json:"type"`
