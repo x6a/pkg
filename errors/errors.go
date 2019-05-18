@@ -18,15 +18,20 @@ package errors
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"runtime"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type ErrorStatus struct {
-	Status int    `json:"status"`
-	Msg    string `json:"msg"`
+	Message  string `json:"message"`
+	Type     string `json:"type"`
+	Priority string `json:"priority"`
+	Code     int    `json:"code"`
+	// TraceID  string `json:"traceId"`
 }
 
 func New(msg string) error {
@@ -73,3 +78,87 @@ func Trace2() string {
   }
 }
 */
+
+func HandleError(priority, severity, errType string, errCode int, err error) ErrorStatus {
+	var status ErrorStatus
+
+	status.Message = severity + ": " + errors.Cause(err).Error()
+	status.Type = errType
+	status.Priority = priority
+	status.Code = errCode
+	// status.TraceID = err.Error()
+
+	// logrus.SetFormatter(&logrus.JSONFormatter{})
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableColors: false,
+		FullTimestamp: true,
+	})
+	logrus.SetReportCaller(true)
+	logrus.SetOutput(os.Stderr)
+
+	// Only log the warning severity or above.
+	//logrus.SetLevel(logrus.WarnLevel)
+
+	switch severity {
+	case "TRACE":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Trace(errors.Cause(err))
+		}
+	case "DEBUG":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Debug(errors.Cause(err))
+		}
+	case "INFO":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Info(errors.Cause(err))
+		}
+	case "WARNING":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Warn(errors.Cause(err))
+		}
+	case "ERROR":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Error(errors.Cause(err))
+		}
+	case "FATAL":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Fatal(errors.Cause(err))
+		}
+	case "PANIC":
+		{
+			logrus.WithFields(logrus.Fields{
+				"priority": priority,
+				"type":     errType,
+				"code":     errCode,
+			}).Panic(errors.Cause(err))
+		}
+	}
+
+	//log.Printf("ERROR: %v\n", errors.Cause(err))
+
+	return status
+}
