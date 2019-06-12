@@ -29,6 +29,7 @@ import (
 const PriorityLow string = "LOW"
 const PriorityMedium string = "MEDIUM"
 const PriorityHigh string = "HIGH"
+const PriorityUrgent string = "URGENT"
 
 const SeverityTrace string = "TRACE"
 const SeverityDebug string = "DEBUG"
@@ -39,11 +40,12 @@ const SeverityFatal string = "FATAL"
 const SeverityPanic string = "PANIC"
 
 type ErrorStatus struct {
-	Message  string `json:"message"`
-	Type     string `json:"type"`
-	Priority string `json:"priority"`
-	Code     int    `json:"code"`
-	// TraceID  string `json:"traceId"`
+	Message  string `json:"message,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Severity string `json:"severity,omitempty"`
+	Priority string `json:"priority,omitempty"`
+	Code     int    `json:"code,omitempty"`
+	Trace    string `json:"trace,omitempty"`
 }
 
 func New(msg string) error {
@@ -94,78 +96,86 @@ func Trace2() string {
 func HandleError(priority, severity, errType string, errCode int, err error) ErrorStatus {
 	var status ErrorStatus
 
-	status.Message = severity + ": " + errors.Cause(err).Error()
+	status.Message = errors.Cause(err).Error()
 	status.Type = errType
+	status.Severity = severity
 	status.Priority = priority
 	status.Code = errCode
-	// status.TraceID = err.Error()
 
 	// logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors: false,
-		FullTimestamp: true,
+		DisableColors:          false,
+		DisableLevelTruncation: true,
+		FullTimestamp:          true,
 	})
-	logrus.SetReportCaller(true)
+	logrus.SetReportCaller(false)
 	logrus.SetOutput(os.Stderr)
 
 	// Only log the warning severity or above.
 	//logrus.SetLevel(logrus.WarnLevel)
 
 	switch severity {
-	case "TRACE":
+	case SeverityTrace:
 		{
+			status.Trace = err.Error()
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
+				"trace":    status.Trace,
 			}).Trace(errors.Cause(err))
 		}
-	case "DEBUG":
+	case SeverityDebug:
 		{
+			status.Trace = err.Error()
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
+				"trace":    status.Trace,
 			}).Debug(errors.Cause(err))
 		}
-	case "INFO":
+	case SeverityInfo:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
 			}).Info(errors.Cause(err))
 		}
-	case "WARNING":
+	case SeverityWarning:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
 			}).Warn(errors.Cause(err))
 		}
-	case "ERROR":
+	case SeverityError:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
+				"trace":    err.Error(),
 			}).Error(errors.Cause(err))
 		}
-	case "FATAL":
+	case SeverityFatal:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
+				"trace":    err.Error(),
 			}).Fatal(errors.Cause(err))
 		}
-	case "PANIC":
+	case SeverityPanic:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": priority,
-				"type":     errType,
-				"code":     errCode,
+				"priority": status.Priority,
+				"type":     status.Type,
+				"code":     status.Code,
+				"trace":    err.Error(),
 			}).Panic(errors.Cause(err))
 		}
 	}
