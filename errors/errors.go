@@ -16,92 +16,164 @@
 package errors
 
 import (
-	"fmt"
-	"log"
+	"encoding/json"
+	"io"
+	"net/http"
 	"os"
-	"path/filepath"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-const PriorityLow string = "LOW"
-const PriorityMedium string = "MEDIUM"
-const PriorityHigh string = "HIGH"
-const PriorityUrgent string = "URGENT"
+const (
+	OptionType = iota
+	OptionStatusCode
+	OptionPriority
+	OptionSeverity
+	OptionNotifyTo
+	OptionOutput
+	OptionHTTPResponse
 
-const SeverityTrace string = "TRACE"
-const SeverityDebug string = "DEBUG"
-const SeverityInfo string = "INFO"
-const SeverityWarning string = "WARNING"
-const SeverityError string = "ERROR"
-const SeverityFatal string = "FATAL"
-const SeverityPanic string = "PANIC"
+	TypeInternalError      = "InternalError"
+	TypeSecurity           = "Security"
+	TypeInvalidData        = "InvalidData"
+	TypeNetworkUnreachable = "NetworkUnreachable"
 
-type ErrorStatus struct {
-	Message  string `json:"message,omitempty"`
-	Type     string `json:"type,omitempty"`
-	Severity string `json:"severity,omitempty"`
-	Priority string `json:"priority,omitempty"`
-	Code     int    `json:"code,omitempty"`
-	Trace    string `json:"trace,omitempty"`
+	PriorityLow    Priority = "LOW"
+	PriorityMedium Priority = "MEDIUM"
+	PriorityHigh   Priority = "HIGH"
+	PriorityUrgent Priority = "URGENT"
+
+	SeverityTrace    Severity = "TRACE"
+	SeverityDebug    Severity = "DEBUG"
+	SeverityInfo     Severity = "INFO"
+	SeverityWarning  Severity = "WARNING"
+	SeverityError    Severity = "ERROR"
+	SeverityCritical Severity = "CRITICAL"
+	SeverityFatal    Severity = "FATAL"
+	SeverityPanic    Severity = "PANIC"
+)
+
+type Priority string
+type Severity string
+
+type ErrorSpec struct {
+	Message    string   `json:"message,omitempty"`
+	Trace      string   `json:"trace,omitempty"`
+	Type       string   `json:"type,omitempty"` // security | invalidData | networkUnreachable
+	StatusCode int      `json:"statusCode,omitempty"`
+	Priority   Priority `json:"priority,omitempty"`
+	Severity   Severity `json:"severity,omitempty"`
 }
 
-func New(msg string) error {
-	return errors.New(msg)
+type Error struct {
+	Error        ErrorSpec           `json:"error"`
+	NotifyTo     []string            `json:"notifyTo,omitempty"`
+	OutputWriter io.Writer           `json:"-"`
+	HTTPWriter   http.ResponseWriter `json:"-"`
 }
 
-func Errorf(format string, args ...interface{}) error {
-	return errors.Errorf(format, args...)
+type ErrOption struct {
+	Key   int
+	Value interface{}
 }
 
-func Wrapf(err error, format string, args ...interface{}) error {
-	return errors.Wrapf(err, format, args...)
-}
-
-func HandleFatalError(err error) {
-	if err != nil {
-		log.Fatalln("ERROR:", err)
+func SetType(t string) ErrOption {
+	return ErrOption{
+		Key:   OptionType,
+		Value: t,
 	}
 }
 
-func Trace() string {
-	pc := make([]uintptr, 10) // at least 1 entry needed
-	runtime.Callers(2, pc)
-	f := runtime.FuncForPC(pc[0])
-	file, line := f.FileLine(pc[0])
-	return fmt.Sprintf("%s:%d | %s", filepath.Base(file), line, f.Name())
+func SetStatusCode(code int) ErrOption {
+	return ErrOption{
+		Key:   OptionStatusCode,
+		Value: code,
+	}
 }
 
-func Trace2() string {
-	pc := make([]uintptr, 15)
-	n := runtime.Callers(2, pc)
-	frames := runtime.CallersFrames(pc[:n])
-	frame, _ := frames.Next()
-	return fmt.Sprintf("%s:%d/%s", filepath.Base(frame.File), frame.Line, frame.Function)
+func SetPriority(p Priority) ErrOption {
+	return ErrOption{
+		Key:   OptionPriority,
+		Value: p,
+	}
 }
 
-/*
-{
-  "error": {
-    "message": "(#803) Some of the aliases you requested do not exist: products",
-    "type": "OAuthException",
-    "code": 803,
-    "fbtrace_id": "FOXX2AhLh80"
-  }
+func SetSeverity(s Severity) ErrOption {
+	return ErrOption{
+		Key:   OptionSeverity,
+		Value: s,
+	}
 }
-*/
 
-func HandleError(priority, severity, errType string, errCode int, err error) ErrorStatus {
-	var status ErrorStatus
+func SetNotifyTo(u []string) ErrOption {
+	return ErrOption{
+		Key:   OptionNotifyTo,
+		Value: u,
+	}
+}
 
-	status.Message = errors.Cause(err).Error()
-	status.Type = errType
-	status.Severity = severity
-	status.Priority = priority
-	status.Code = errCode
+func SetOutput(out io.Writer) ErrOption {
+	return ErrOption{
+		Key:   OptionOutput,
+		Value: out,
+	}
+}
 
+func SetHTTPResponse(w http.ResponseWriter) ErrOption {
+	return ErrOption{
+		Key:   OptionHTTPResponse,
+		Value: w,
+	}
+}
+
+func (e *Error) setOptions(errOpts ...ErrOption) {
+	for _, opt := range errOpts {
+		switch opt.Key {
+		case OptionType:
+			e.Error.Type = opt.Value.(string)
+		case OptionStatusCode:
+			e.Error.StatusCode = opt.Value.(int)
+		case OptionPriority:
+			e.Error.Priority = opt.Value.(Priority)
+		case OptionSeverity:
+			e.Error.Severity = opt.Value.(Severity)
+		case OptionNotifyTo:
+			e.NotifyTo = opt.Value.([]string)
+		case OptionOutput:
+			e.OutputWriter = opt.Value.(io.Writer)
+		case OptionHTTPResponse:
+			e.HTTPWriter = opt.Value.(http.ResponseWriter)
+		}
+	}
+}
+
+func Log(err error, errOpts ...ErrOption) *Error {
+	e := new(Error)
+	e.Error.Message = err.Error()
+	e.Error.Trace = errors.Cause(err).Error()
+	e.Error.Type = TypeInternalError
+	e.Error.StatusCode = http.StatusInternalServerError
+	e.Error.Priority = PriorityLow
+	e.Error.Severity = SeverityError
+	e.NotifyTo = nil
+	e.OutputWriter = os.Stderr
+	e.HTTPWriter = nil
+
+	e.setOptions(errOpts...)
+	e.logError()
+
+	if e.HTTPWriter != nil {
+		e.HTTPWriter.WriteHeader(e.Error.StatusCode)
+		if err := json.NewEncoder(e.HTTPWriter).Encode(e); err != nil {
+			http.Error(e.HTTPWriter, err.Error(), http.StatusInternalServerError)
+		}
+	}
+
+	return e
+}
+
+func (e *Error) logError() {
 	// logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableColors:          false,
@@ -109,78 +181,74 @@ func HandleError(priority, severity, errType string, errCode int, err error) Err
 		FullTimestamp:          true,
 	})
 	logrus.SetReportCaller(false)
-	logrus.SetOutput(os.Stderr)
+	logrus.SetOutput(e.OutputWriter)
 
 	// Only log the warning severity or above.
 	//logrus.SetLevel(logrus.WarnLevel)
 
-	switch severity {
+	switch e.Error.Severity {
 	case SeverityTrace:
 		{
-			status.Trace = err.Error()
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-				"trace":    status.Trace,
-			}).Trace(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+				"trace":    e.Error.Trace,
+			}).Trace(e.Error.Message)
 		}
 	case SeverityDebug:
 		{
-			status.Trace = err.Error()
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-				"trace":    status.Trace,
-			}).Debug(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+				"trace":    e.Error.Trace,
+			}).Debug(e.Error.Message)
 		}
 	case SeverityInfo:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-			}).Info(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+			}).Info(e.Error.Message)
 		}
 	case SeverityWarning:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-			}).Warn(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+			}).Warn(e.Error.Message)
 		}
 	case SeverityError:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-				"trace":    err.Error(),
-			}).Error(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+				"trace":    e.Error.Trace,
+			}).Error(e.Error.Message)
 		}
 	case SeverityFatal:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-				"trace":    err.Error(),
-			}).Fatal(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+				"trace":    e.Error.Trace,
+			}).Fatal(e.Error.Message)
 		}
 	case SeverityPanic:
 		{
 			logrus.WithFields(logrus.Fields{
-				"priority": status.Priority,
-				"type":     status.Type,
-				"code":     status.Code,
-				"trace":    err.Error(),
-			}).Panic(errors.Cause(err))
+				"priority": e.Error.Priority,
+				"type":     e.Error.Type,
+				"code":     e.Error.StatusCode,
+				"trace":    e.Error.Trace,
+			}).Panic(e.Error.Message)
 		}
 	}
 
-	//log.Printf("ERROR: %v\n", errors.Cause(err))
-
-	return status
+	//log.Printf("ERROR: %v\n", e.Error.Message)
 }
