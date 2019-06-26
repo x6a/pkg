@@ -173,6 +173,10 @@ func Log(err error, errOpts ...ErrOption) *Error {
 	return e
 }
 
+func (e *Error) Err() error {
+	return New(e.Error.Message)
+}
+
 func (e *Error) logError() {
 	// logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetFormatter(&logrus.TextFormatter{
