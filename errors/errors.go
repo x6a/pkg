@@ -35,6 +35,7 @@ const (
 	OptionHTTPResponse
 
 	TypeInternalError      = "InternalError"
+	TypeConfigurationError = "ConfigurationError"
 	TypeSecurity           = "Security"
 	TypeInvalidData        = "InvalidData"
 	TypeNetworkUnreachable = "NetworkUnreachable"
@@ -154,7 +155,7 @@ func Log(err error, errOpts ...ErrOption) *Error {
 	e.Error.Trace = errors.Cause(err).Error()
 	e.Error.Type = TypeInternalError
 	e.Error.StatusCode = http.StatusInternalServerError
-	e.Error.Priority = PriorityLow
+	e.Error.Priority = PriorityMedium
 	e.Error.Severity = SeverityError
 	e.NotifyTo = nil
 	e.OutputWriter = os.Stderr
