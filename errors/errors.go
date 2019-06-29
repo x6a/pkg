@@ -151,8 +151,8 @@ func (e *Error) setOptions(errOpts ...ErrOption) {
 
 func Log(err error, errOpts ...ErrOption) *Error {
 	e := new(Error)
-	e.Error.Message = err.Error()
-	e.Error.Trace = errors.Cause(err).Error()
+	e.Error.Message = errors.Cause(err).Error()
+	e.Error.Trace = err.Error()
 	e.Error.Type = TypeInternalError
 	e.Error.StatusCode = http.StatusInternalServerError
 	e.Error.Priority = PriorityMedium
