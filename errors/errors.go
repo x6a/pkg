@@ -33,7 +33,6 @@ const (
 	OptionNotifyTo
 	OptionOutput
 	OptionHTTPResponse
-	OptionNotifyFunc
 
 	TypeInternalError      = "InternalError"
 	TypeConfigurationError = "ConfigurationError"
@@ -68,14 +67,11 @@ type ErrorSpec struct {
 	Severity   Severity `json:"severity,omitempty"`
 }
 
-type NotifyFunc func(e *Error) error
-
 type Error struct {
 	Error        ErrorSpec           `json:"error"`
 	NotifyTo     []string            `json:"notifyTo,omitempty"`
 	OutputWriter io.Writer           `json:"-"`
 	HTTPWriter   http.ResponseWriter `json:"-"`
-	NotifyFunc   NotifyFunc          `json:"-"`
 }
 
 type ErrOption struct {
@@ -149,8 +145,6 @@ func (e *Error) setOptions(errOpts ...ErrOption) {
 			e.OutputWriter = opt.Value.(io.Writer)
 		case OptionHTTPResponse:
 			e.HTTPWriter = opt.Value.(http.ResponseWriter)
-		case OptionNotifyFunc:
-			e.NotifyFunc = opt.Value.(NotifyFunc)
 		}
 	}
 }
@@ -166,7 +160,6 @@ func Log(err error, errOpts ...ErrOption) *Error {
 	e.NotifyTo = nil
 	e.OutputWriter = os.Stderr
 	e.HTTPWriter = nil
-	e.NotifyFunc = nil
 
 	e.setOptions(errOpts...)
 	e.logError()
@@ -175,16 +168,6 @@ func Log(err error, errOpts ...ErrOption) *Error {
 		e.HTTPWriter.WriteHeader(e.Error.StatusCode)
 		if err := json.NewEncoder(e.HTTPWriter).Encode(e); err != nil {
 			http.Error(e.HTTPWriter, err.Error(), http.StatusInternalServerError)
-		}
-	}
-
-	if len(e.NotifyTo) > 0 && e.NotifyFunc != nil {
-		if err := e.NotifyFunc(e); err != nil {
-			Log(
-				err,
-				SetPriority(PriorityHigh),
-				SetSeverity(SeverityError),
-			)
 		}
 	}
 
