@@ -257,3 +257,15 @@ func (e *Error) logError() {
 
 	//log.Printf("ERROR: %v\n", e.Error.Message)
 }
+
+func New(msg string) error {
+	return errors.New(msg)
+}
+
+func Errorf(format string, args ...interface{}) error {
+	return errors.Errorf(format, args...)
+}
+
+func Wrapf(err error, format string, args ...interface{}) error {
+	return errors.Wrapf(err, format, args...)
+}

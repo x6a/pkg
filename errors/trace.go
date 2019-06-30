@@ -19,21 +19,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
-
-	"github.com/pkg/errors"
 )
-
-func New(msg string) error {
-	return errors.New(msg)
-}
-
-func Errorf(format string, args ...interface{}) error {
-	return errors.Errorf(format, args...)
-}
-
-func Wrapf(err error, format string, args ...interface{}) error {
-	return errors.Wrapf(err, format, args...)
-}
 
 func Trace() string {
 	pc := make([]uintptr, 10) // at least 1 entry needed
