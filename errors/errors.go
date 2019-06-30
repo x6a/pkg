@@ -34,6 +34,7 @@ const (
 	OptionOutput
 	OptionHTTPResponse
 
+	TypeOK                 = "OK"
 	TypeInternalError      = "InternalError"
 	TypeConfigurationError = "ConfigurationError"
 	TypeSecurity           = "Security"
