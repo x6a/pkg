@@ -141,7 +141,7 @@ func (e *Error) setOptions(errOpts ...ErrOption) {
 		case OptionSeverity:
 			e.Error.Severity = opt.Value.(Severity)
 		case OptionNotifyTo:
-			e.NotifyTo = opt.Value.([]string)
+			e.NotifyTo = append(e.NotifyTo, opt.Value.(string))
 		case OptionOutput:
 			e.OutputWriter = opt.Value.(io.Writer)
 		case OptionHTTPResponse:
