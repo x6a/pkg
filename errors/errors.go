@@ -33,6 +33,7 @@ const (
 	OptionNotifyTo
 	OptionOutput
 	OptionHTTPResponse
+	OptionNotifyFunc
 
 	TypeInternalError      = "InternalError"
 	TypeConfigurationError = "ConfigurationError"
@@ -148,6 +149,8 @@ func (e *Error) setOptions(errOpts ...ErrOption) {
 			e.OutputWriter = opt.Value.(io.Writer)
 		case OptionHTTPResponse:
 			e.HTTPWriter = opt.Value.(http.ResponseWriter)
+		case OptionNotifyFunc:
+			e.NotifyFunc = opt.Value.(NotifyFunc)
 		}
 	}
 }
