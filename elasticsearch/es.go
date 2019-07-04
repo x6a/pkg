@@ -18,7 +18,7 @@ import (
 func ESConnect(esURL, esUsername, esPassword, esCACertB64 string) (*elasticsearch.Client, error) {
 	var certs *x509.CertPool
 
-	if esCACertB64 != "" {
+	if len(esCACertB64) > 0 {
 		blob, err := base64.URLEncoding.DecodeString(esCACertB64)
 		if err != nil {
 			return nil, errors.Wrapf(err, "[%v] function base64.URLEncoding.DecodeString(esCACertB64)", errors.Trace())
@@ -55,35 +55,12 @@ func ESConnect(esURL, esUsername, esPassword, esCACertB64 string) (*elasticsearc
 	return es, nil
 }
 
-func ESGet(es *elasticsearch.Client, index, objID string) ([]byte, error) {
+func ESGet(es *elasticsearch.Client, index, objID string, srcIncludes ...string) ([]byte, error) {
 	resp, err := es.Get(
 		index,
 		objID,
 		es.Get.WithPretty(),
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "[%v] function es.Get()", errors.Trace())
-	}
-	defer resp.Body.Close()
-
-	if resp.IsError() {
-		return nil, errors.Errorf("[%s] Error getting document ID=%s", resp.Status(), objID)
-	}
-
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1048576))
-	if err != nil {
-		return nil, errors.Wrapf(err, "[%v] function ioutil.ReadAll()", errors.Trace())
-	}
-
-	return body, nil
-}
-
-func ESGetMetrics(es *elasticsearch.Client, index, objID string) ([]byte, error) {
-	resp, err := es.Get(
-		index,
-		objID,
-		es.Get.WithPretty(),
-		es.Get.WithSourceIncludes("metrics"),
+		es.Get.WithSourceIncludes(srcIncludes...),
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "[%v] function es.Get()", errors.Trace())
