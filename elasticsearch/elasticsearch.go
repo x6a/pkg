@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v6"
+	"github.com/elastic/go-elasticsearch/v6/esapi"
+
 	"github.com/x6a/pkg/errors"
 )
 
@@ -56,12 +58,23 @@ func ESConnect(esURL, esUsername, esPassword, esCACertB64 string) (*elasticsearc
 }
 
 func ESGet(es *elasticsearch.Client, index, objID string, srcIncludes ...string) ([]byte, error) {
-	resp, err := es.Get(
-		index,
-		objID,
-		es.Get.WithPretty(),
-		es.Get.WithSourceIncludes(srcIncludes...),
-	)
+	var err error
+	var resp *esapi.Response
+
+	if len(srcIncludes) > 0 {
+		resp, err = es.Get(
+			index,
+			objID,
+			es.Get.WithPretty(),
+			es.Get.WithSourceIncludes(srcIncludes...),
+		)
+	} else {
+		resp, err = es.Get(
+			index,
+			objID,
+			es.Get.WithPretty(),
+		)
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "[%v] function es.Get()", errors.Trace())
 	}
