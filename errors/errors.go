@@ -273,10 +273,13 @@ func Wrapf(err error, format string, args ...interface{}) error {
 }
 
 func Errs(errs []error) error {
+	if len(errs) == 0 {
+		return nil
+	}
+
 	errMsg := "ERRORS: |+| "
 	for _, err := range errs {
 		errMsg = errMsg + fmt.Sprint(err) + " |+| "
 	}
-
 	return New(errMsg)
 }
