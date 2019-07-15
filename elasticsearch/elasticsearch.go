@@ -39,8 +39,8 @@ func ESConnect(esURL, esUsername, esPassword, esCACertB64 string) (*elasticsearc
 		Password: esPassword,
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost:   10,
-			ResponseHeaderTimeout: time.Second,
-			DialContext:           (&net.Dialer{Timeout: 10*time.Second}).DialContext,
+			ResponseHeaderTimeout: 10 * time.Second,
+			DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
 			TLSClientConfig: &tls.Config{
 				MinVersion: tls.VersionTLS12,
 				MaxVersion: tls.VersionTLS12,
