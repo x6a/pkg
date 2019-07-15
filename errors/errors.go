@@ -17,6 +17,7 @@ package errors
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -269,4 +270,13 @@ func Errorf(format string, args ...interface{}) error {
 
 func Wrapf(err error, format string, args ...interface{}) error {
 	return errors.Wrapf(err, format, args...)
+}
+
+func Errs(errs []error) error {
+	errMsg := "ERRORS: |+| "
+	for _, err := range errs {
+		errMsg = errMsg + fmt.Sprint(err) + " |+| "
+	}
+
+	return New(errMsg)
 }
