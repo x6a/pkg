@@ -272,7 +272,7 @@ func Wrapf(err error, format string, args ...interface{}) error {
 	return errors.Wrapf(err, format, args...)
 }
 
-func Errs(errs ...error) error {
+func Errs(errs []error) error {
 	if len(errs) == 0 {
 		return nil
 	}
