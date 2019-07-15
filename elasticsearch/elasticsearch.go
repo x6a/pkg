@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -50,8 +51,13 @@ func ESConnect(esURL, esUsername, esPassword, esCACertB64 string) (*elasticsearc
 	}
 
 	es, err := elasticsearch.NewClient(esCfg)
+	for i := 0; err != nil && i < 10; i++ {
+		log.Println("WARNING: unable to connect to elasticsearch db, retrying in 3s..")
+		time.Sleep(3 * time.Second)
+		es, err = elasticsearch.NewClient(esCfg)
+	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "[%v] function elasticsearch.NewClient(esCfg)", errors.Trace())
+		return nil, errors.Wrapf(err, "[%v] function elasticsearch.NewClient(esCfg): unable to connect to elasticsearch db", errors.Trace())
 	}
 
 	return es, nil
