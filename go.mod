@@ -1,6 +1,7 @@
 module github.com/x6a/pkg
 
 require (
+	github.com/elastic/go-elasticsearch v0.0.0
 	github.com/elastic/go-elasticsearch/v6 v6.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
