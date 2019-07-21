@@ -19,11 +19,15 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type sshCommand struct {
@@ -52,14 +56,36 @@ func (client *sshClient) newSession() (*ssh.Session, error) {
 	}
 
 	modes := ssh.TerminalModes{
-		// ssh.ECHO:          0,  // disable echoing
+		// See: https://tools.ietf.org/html/rfc4254#section-8
+		// ssh.VINTR:      255,
+		// ssh.IGNCR:      0, // Ignore CR on input
+		// ssh.ISIG:       0,
+		// ssh.CS8:        1,
+		ssh.ECHO:          0,     // disable echoing
+		ssh.ECHOCTL:       0,     // disable echoing
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
 
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		session.Close()
-		return nil, fmt.Errorf("request for pseudo terminal failed: %s", err)
+	fd := int(os.Stdin.Fd())
+
+	if terminal.IsTerminal(fd) {
+		state, err := terminal.MakeRaw(fd)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer terminal.Restore(fd, state)
+
+		w, h, err := terminal.GetSize(fd)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		//if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
+		if err := session.RequestPty("xterm-256color", h, w, modes); err != nil {
+			session.Close()
+			return nil, fmt.Errorf("request for pseudo terminal failed: %s", err)
+		}
 	}
 
 	return session, nil
@@ -73,6 +99,7 @@ func (client *sshClient) prepareCommand(session *ssh.Session, cmd *sshCommand) e
 		}
 
 		if err := session.Setenv(variable[0], variable[1]); err != nil {
+			fmt.Println("error setenv:", variable[0], variable[1])
 			return err
 		}
 	}
@@ -100,6 +127,34 @@ func (client *sshClient) prepareCommand(session *ssh.Session, cmd *sshCommand) e
 		}
 		go io.Copy(cmd.Stderr, stderr)
 	}
+
+	// Set IO
+	//session.Stdout = ansicolor.NewAnsiColorWriter(os.Stdout)
+	//session.Stderr = ansicolor.NewAnsiColorWriter(os.Stderr)
+
+	// StdinPipe for commands
+	in, err := session.StdinPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGINT)
+	go func() {
+		for {
+			sig := <-c
+			switch sig {
+			case os.Interrupt:
+				//fmt.Println("Got signal:", sig)
+				//session.Signal(ssh.SIGINT)
+				fmt.Fprint(in, "\n")
+				//os.Exit(0)
+			case syscall.SIGINT:
+				//fmt.Println("Got signal:", sig)
+				os.Exit(0)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -138,14 +193,26 @@ func publicKeyAuthMethod(file string) ssh.AuthMethod {
 
 // ExecSSH executes a command via SSH on a remote host
 func ExecSSH(username, sshPrivateKeyFile, host string, port int, command string) error {
-
 	timeout, _ := time.ParseDuration("20s")
 
 	sshConfig := &ssh.ClientConfig{
-		User:            username,
-		Auth:            []ssh.AuthMethod{publicKeyAuthMethod(sshPrivateKeyFile)},
+		User: username,
+		Auth: []ssh.AuthMethod{publicKeyAuthMethod(sshPrivateKeyFile)},
+		// allow any host key to be used
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         timeout,
+		// verify host public key
+		// HostKeyCallback: ssh.FixedHostKey(hostKey),
+		// optional host key algo list
+		HostKeyAlgorithms: []string{
+			ssh.KeyAlgoRSA,
+			ssh.KeyAlgoDSA,
+			ssh.KeyAlgoECDSA256,
+			ssh.KeyAlgoECDSA384,
+			ssh.KeyAlgoECDSA521,
+			ssh.KeyAlgoED25519,
+		},
+		// optional tcp connect timeout
+		Timeout: timeout,
 	}
 
 	client := &sshClient{
@@ -155,9 +222,9 @@ func ExecSSH(username, sshPrivateKeyFile, host string, port int, command string)
 	}
 
 	cmd := &sshCommand{
-		//Path:   "ls -l $LC_DIR",
+		// Path:   "ls -l $LC_DIR",
 		Path:   command,
-		Env:    []string{"LC_DIR=/tmp"},
+		Env:    []string{"LC_DIR=/tmp", "LC_CTYPE=en_US.UTF-8"},
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
