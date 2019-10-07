@@ -71,6 +71,7 @@ type slackLoggerCfg struct {
 	webhook  string
 	user     string
 	icon     string
+	logLevel int
 	channels map[int]string
 	colors   map[int]string
 }
@@ -100,13 +101,14 @@ func NewLogger(level int, hostID string, logOpts ...*LogOption) {
 	l = logger
 }
 
-func WithSlack(webhook, user, icon, traceChannel, debugChannel, infoChannel, warnChannel, errorChannel, alertChannel string) *LogOption {
+func WithSlack(level int, webhook, user, icon, traceChannel, debugChannel, infoChannel, warnChannel, errorChannel, alertChannel string) *LogOption {
 	return &LogOption{
 		Key: logOptionSlack,
 		Value: &slackLoggerCfg{
-			webhook: webhook,
-			user:    user,
-			icon:    icon,
+			webhook:  webhook,
+			user:     user,
+			icon:     icon,
+			logLevel: level,
 			channels: map[int]string{
 				TRACE: traceChannel,
 				DEBUG: debugChannel,
