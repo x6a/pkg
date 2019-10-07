@@ -51,8 +51,8 @@ var logPrefixes = map[int]string{
 
 var logColorFuncs = map[int]func(string) string{
 	TRACE: ansi.ColorFunc("magenta+bh"),
-	DEBUG: ansi.ColorFunc("blue+bh"),
-	INFO:  ansi.ColorFunc("cyan+b"),
+	DEBUG: ansi.ColorFunc("blue+b"),
+	INFO:  ansi.ColorFunc("blue+bh"),
 	WARN:  ansi.ColorFunc("yellow+b"),
 	ERROR: ansi.ColorFunc("red+bh"),
 	ALERT: ansi.ColorFunc("white+bh:red"),
@@ -147,7 +147,7 @@ func (l *logger) logLevelPrefix(level int) string {
 }
 
 func (l *logger) logPrefix(level int) string {
-	return l.logLevelPrefix(level) + " " + ansi.Color(time.Now().Format(TIME_FORMAT), "black+bh")
+	return l.logLevelPrefix(level) + " " + ansi.Color(time.Now().Format(time.RFC3339), "black+bh")
 }
 
 func (l *logger) severity(level int) string {
