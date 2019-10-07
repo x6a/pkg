@@ -24,11 +24,11 @@ import (
 	"github.com/x6a/pkg/errors"
 )
 
-func (l *Logger) slackMsgTitle(level int, timestamp time.Time) string {
+func (l *logger) slackMsgTitle(level int, timestamp time.Time) string {
 	return "[" + l.severity(level) + "] " + l.hostID + ": " + timestamp.Format(TIME_FORMAT)
 }
 
-func (l *Logger) slackLog(level int, msg string) error {
+func (l *logger) slackLog(level int, msg string) error {
 	if l.slackLogger.channels[level] == "" {
 		return nil
 	}

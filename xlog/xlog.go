@@ -75,7 +75,12 @@ type slackLoggerCfg struct {
 	colors   map[int]string
 }
 
-type Logger struct {
+type LogOption struct {
+	Key   int
+	Value interface{}
+}
+
+type logger struct {
 	LogLevel int
 	hostID   string
 
@@ -83,22 +88,19 @@ type Logger struct {
 	outputFile  string
 }
 
-type LogOption struct {
-	Key   int
-	Value interface{}
-}
+var l *logger
 
-func NewLogger(level int, hostID string, logOpts ...*LogOption) *Logger {
-	l := &Logger{
+func NewLogger(level int, hostID string, logOpts ...*LogOption) {
+	logger := &logger{
 		LogLevel: level,
 		hostID:   hostID,
 	}
-	l.setOptions(logOpts...)
+	logger.setOptions(logOpts...)
 
-	return l
+	l = logger
 }
 
-func (l *Logger) WithSlack(webhook, user, icon, traceChannel, debugChannel, infoChannel, warnChannel, errorChannel, alertChannel string) *LogOption {
+func WithSlack(webhook, user, icon, traceChannel, debugChannel, infoChannel, warnChannel, errorChannel, alertChannel string) *LogOption {
 	return &LogOption{
 		Key: logOptionSlack,
 		Value: &slackLoggerCfg{
@@ -125,7 +127,7 @@ func (l *Logger) WithSlack(webhook, user, icon, traceChannel, debugChannel, info
 	}
 }
 
-func (l *Logger) setOptions(logOpts ...*LogOption) {
+func (l *logger) setOptions(logOpts ...*LogOption) {
 	for _, opt := range logOpts {
 		switch opt.Key {
 		case logOptionSlack:
@@ -136,25 +138,25 @@ func (l *Logger) setOptions(logOpts ...*LogOption) {
 	}
 }
 
-func (l *Logger) logLevelPrefix(level int) string {
+func (l *logger) logLevelPrefix(level int) string {
 	prefix := "[ " + logPrefixes[level] + " ]"
 
 	return logColorFuncs[level](prefix)
 }
 
-func (l *Logger) logPrefix(level int) string {
+func (l *logger) logPrefix(level int) string {
 	return l.logLevelPrefix(level) + " " + time.Now().Format(TIME_FORMAT)
 }
 
-func (l *Logger) severity(level int) string {
+func (l *logger) severity(level int) string {
 	return strings.ToUpper(strings.TrimSpace(logPrefixes[level]))
 }
 
-func (l *Logger) priority(level int) string {
+func (l *logger) priority(level int) string {
 	return strings.ToUpper(strings.TrimSpace(priorities[level]))
 }
 
-func (l *Logger) log(level int, args ...interface{}) {
+func (l *logger) log(level int, args ...interface{}) {
 	if level >= l.LogLevel {
 		all := append([]interface{}{l.logPrefix(level)}, args...)
 		fmt.Println(all...)
@@ -165,7 +167,7 @@ func (l *Logger) log(level int, args ...interface{}) {
 	}
 }
 
-func (l *Logger) logf(level int, format string, args ...interface{}) {
+func (l *logger) logf(level int, format string, args ...interface{}) {
 	if level >= l.LogLevel {
 		fmt.Println(l.logPrefix(level), fmt.Sprintf(format, args...))
 
@@ -175,50 +177,50 @@ func (l *Logger) logf(level int, format string, args ...interface{}) {
 	}
 }
 
-func (l *Logger) Trace(args ...interface{}) {
+func Trace(args ...interface{}) {
 	l.log(TRACE, args...)
 }
 
-func (l *Logger) Debug(args ...interface{}) {
+func Debug(args ...interface{}) {
 	l.log(DEBUG, args...)
 }
 
-func (l *Logger) Info(args ...interface{}) {
+func Info(args ...interface{}) {
 	l.log(INFO, args...)
 }
 
-func (l *Logger) Warn(args ...interface{}) {
+func Warn(args ...interface{}) {
 	l.log(WARN, args...)
 }
 
-func (l *Logger) Error(args ...interface{}) {
+func Error(args ...interface{}) {
 	l.log(ERROR, args...)
 }
 
-func (l *Logger) Alert(args ...interface{}) {
+func Alert(args ...interface{}) {
 	l.log(ALERT, args...)
 }
 
-func (l *Logger) Tracef(format string, args ...interface{}) {
+func Tracef(format string, args ...interface{}) {
 	l.logf(TRACE, format, args...)
 }
 
-func (l *Logger) Debugf(format string, args ...interface{}) {
+func Debugf(format string, args ...interface{}) {
 	l.logf(DEBUG, format, args...)
 }
 
-func (l *Logger) Infof(format string, args ...interface{}) {
+func Infof(format string, args ...interface{}) {
 	l.logf(INFO, format, args...)
 }
 
-func (l *Logger) Warnf(format string, args ...interface{}) {
+func Warnf(format string, args ...interface{}) {
 	l.logf(WARN, format, args...)
 }
 
-func (l *Logger) Errorf(format string, args ...interface{}) {
+func Errorf(format string, args ...interface{}) {
 	l.logf(ERROR, format, args...)
 }
 
-func (l *Logger) Alertf(format string, args ...interface{}) {
+func Alertf(format string, args ...interface{}) {
 	l.logf(ALERT, format, args...)
 }
