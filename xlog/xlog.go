@@ -23,7 +23,7 @@ import (
 	"github.com/mgutz/ansi"
 )
 
-const TIME_FORMAT = "2000-01-01T00:00:00.000000"
+const TIME_FORMAT = "2000-01-01 00:00:00.000"
 
 const (
 	TRACE = iota
