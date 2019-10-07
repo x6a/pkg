@@ -91,7 +91,7 @@ type logger struct {
 
 var l *logger
 
-func NewLogger(level int, hostID string, logOpts ...*LogOption) {
+func RegisterLogger(level int, hostID string, logOpts ...*LogOption) {
 	logger := &logger{
 		LogLevel: level,
 		hostID:   hostID,
@@ -141,7 +141,7 @@ func (l *logger) setOptions(logOpts ...*LogOption) {
 }
 
 func (l *logger) logLevelPrefix(level int) string {
-	prefix := "[ " + logPrefixes[level] + " ]"
+	prefix := "[" + logPrefixes[level] + "]"
 
 	return logColorFuncs[level](prefix)
 }
