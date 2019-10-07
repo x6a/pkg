@@ -23,7 +23,7 @@ import (
 	"github.com/mgutz/ansi"
 )
 
-const TIME_FORMAT = "2000-01-01 00:00:00"
+const TIME_FORMAT = "2006-01-02 15:04:05.000"
 
 const (
 	TRACE = iota
@@ -147,7 +147,7 @@ func (l *logger) logLevelPrefix(level int) string {
 }
 
 func (l *logger) logPrefix(level int) string {
-	return l.logLevelPrefix(level) + " " + ansi.Color(time.Now().Format(time.RFC3339), "black+bh")
+	return l.logLevelPrefix(level) + " " + ansi.Color(time.Now().Format(TIME_FORMAT), "black+bh")
 }
 
 func (l *logger) severity(level int) string {
