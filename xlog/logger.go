@@ -178,7 +178,9 @@ func (l *logger) log(level int, args ...interface{}) {
 		fmt.Println(all...)
 
 		if l.slackLogger != nil {
-			l.slackLog(level, timestamp, fmt.Sprint(args...))
+			if level >= l.slackLogger.logLevel {
+				l.slackLog(level, timestamp, fmt.Sprint(args...))
+			}
 		}
 	}
 }
@@ -190,7 +192,9 @@ func (l *logger) logf(level int, format string, args ...interface{}) {
 		fmt.Println(l.logPrefix(level, timestamp), fmt.Sprintf(format, args...))
 
 		if l.slackLogger != nil {
-			l.slackLog(level, timestamp, fmt.Sprintf(format, args...))
+			if level >= l.slackLogger.logLevel {
+				l.slackLog(level, timestamp, fmt.Sprintf(format, args...))
+			}
 		}
 	}
 }
