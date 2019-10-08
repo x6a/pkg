@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
+	"github.com/x6a/pkg/colors"
 )
 
 const TIME_FORMAT = "2006-01-02 15:04:05.000"
@@ -35,37 +36,16 @@ const (
 )
 
 const (
+	LOW    = "LOW"
+	MEDIUM = "MEDIUM"
+	HIGH   = "HIGH"
+)
+
+const (
 	logOptionSlack = iota
 	logOptionFile
 	logOptionSyslog
 )
-
-var logPrefixes = map[int]string{
-	TRACE: "trace",
-	DEBUG: "debug",
-	INFO:  " info",
-	WARN:  " warn",
-	ERROR: "error",
-	ALERT: "alert",
-}
-
-var logColorFuncs = map[int]func(string) string{
-	TRACE: ansi.ColorFunc("magenta+bh"),
-	DEBUG: ansi.ColorFunc("blue+b"),
-	INFO:  ansi.ColorFunc("blue+bh"),
-	WARN:  ansi.ColorFunc("yellow+b"),
-	ERROR: ansi.ColorFunc("red+bh"),
-	ALERT: ansi.ColorFunc("white+bh:red"),
-}
-
-var priorities = map[int]string{
-	TRACE: "low",
-	DEBUG: "low",
-	INFO:  "low",
-	WARN:  "medium",
-	ERROR: "high",
-	ALERT: "high",
-}
 
 type slackLoggerCfg struct {
 	webhook  string
@@ -77,23 +57,52 @@ type slackLoggerCfg struct {
 }
 
 type LogOption struct {
-	Key   int
-	Value interface{}
+	key   int
+	value interface{}
 }
 
 type logger struct {
-	LogLevel int
+	logLevel int
 	hostID   string
 
 	slackLogger *slackLoggerCfg
 	outputFile  string
 }
 
-var l *logger
+var logPrefixes = map[int]string{
+	TRACE: "trace",
+	DEBUG: "debug",
+	INFO:  " info",
+	WARN:  " warn",
+	ERROR: "error",
+	ALERT: "alert",
+}
 
-func RegisterLogger(level int, hostID string, logOpts ...*LogOption) {
+var logPriorities = map[int]string{
+	TRACE: LOW,
+	DEBUG: LOW,
+	INFO:  LOW,
+	WARN:  MEDIUM,
+	ERROR: HIGH,
+	ALERT: HIGH,
+}
+
+var logColorFuncs = map[int]func(string) string{
+	TRACE: ansi.ColorFunc("magenta+bh"),
+	DEBUG: ansi.ColorFunc("blue+b"),
+	INFO:  ansi.ColorFunc("blue+bh"),
+	WARN:  ansi.ColorFunc("yellow+b"),
+	ERROR: ansi.ColorFunc("red+bh"),
+	ALERT: ansi.ColorFunc("white+bh:red"),
+}
+
+var l = &logger{
+	logLevel: INFO,
+}
+
+func SetLogger(level int, hostID string, logOpts ...*LogOption) {
 	logger := &logger{
-		LogLevel: level,
+		logLevel: level,
 		hostID:   hostID,
 	}
 	logger.setOptions(logOpts...)
@@ -103,8 +112,8 @@ func RegisterLogger(level int, hostID string, logOpts ...*LogOption) {
 
 func WithSlack(level int, webhook, user, icon, traceChannel, debugChannel, infoChannel, warnChannel, errorChannel, alertChannel string) *LogOption {
 	return &LogOption{
-		Key: logOptionSlack,
-		Value: &slackLoggerCfg{
+		key: logOptionSlack,
+		value: &slackLoggerCfg{
 			webhook:  webhook,
 			user:     user,
 			icon:     icon,
@@ -131,11 +140,11 @@ func WithSlack(level int, webhook, user, icon, traceChannel, debugChannel, infoC
 
 func (l *logger) setOptions(logOpts ...*LogOption) {
 	for _, opt := range logOpts {
-		switch opt.Key {
+		switch opt.key {
 		case logOptionSlack:
-			l.slackLogger = opt.Value.(*slackLoggerCfg)
+			l.slackLogger = opt.value.(*slackLoggerCfg)
 		case logOptionFile:
-			l.outputFile = opt.Value.(string)
+			l.outputFile = opt.value.(string)
 		}
 	}
 }
@@ -147,7 +156,11 @@ func (l *logger) logLevelPrefix(level int) string {
 }
 
 func (l *logger) logPrefix(level int) string {
-	return l.logLevelPrefix(level) + " " + ansi.Color(time.Now().Format(TIME_FORMAT), "black+bh")
+	timestamp := colors.Black(time.Now().Format(TIME_FORMAT))
+	//hostID := "[" + colors.White(l.hostID) + "]"
+
+	// return l.logLevelPrefix(level) + " " + timestamp + " " + hostID
+	return l.logLevelPrefix(level) + " " + timestamp
 }
 
 func (l *logger) severity(level int) string {
@@ -155,11 +168,11 @@ func (l *logger) severity(level int) string {
 }
 
 func (l *logger) priority(level int) string {
-	return strings.ToUpper(strings.TrimSpace(priorities[level]))
+	return strings.ToUpper(strings.TrimSpace(logPriorities[level]))
 }
 
 func (l *logger) log(level int, args ...interface{}) {
-	if level >= l.LogLevel {
+	if level >= l.logLevel {
 		all := append([]interface{}{l.logPrefix(level)}, args...)
 		fmt.Println(all...)
 
@@ -170,7 +183,7 @@ func (l *logger) log(level int, args ...interface{}) {
 }
 
 func (l *logger) logf(level int, format string, args ...interface{}) {
-	if level >= l.LogLevel {
+	if level >= l.logLevel {
 		fmt.Println(l.logPrefix(level), fmt.Sprintf(format, args...))
 
 		if l.slackLogger != nil {
