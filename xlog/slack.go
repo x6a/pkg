@@ -25,15 +25,13 @@ import (
 )
 
 func (l *logger) slackMsgTitle(level int, timestamp time.Time) string {
-	return "[" + l.severity(level) + "] " + l.hostID + ": " + timestamp.Format(TIME_FORMAT)
+	return "[" + l.severity(level) + "] " + timestamp.Format(TIME_FORMAT) + " @" + l.hostID
 }
 
-func (l *logger) slackLog(level int, msg string) error {
+func (l *logger) slackLog(level int, timestamp time.Time, msg string) error {
 	if l.slackLogger.channels[level] == "" {
 		return nil
 	}
-
-	timestamp := time.Now()
 
 	attachment := slack.Attachment{
 		Title:      l.slackMsgTitle(level, timestamp),

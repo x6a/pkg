@@ -155,12 +155,11 @@ func (l *logger) logLevelPrefix(level int) string {
 	return logColorFuncs[level](prefix)
 }
 
-func (l *logger) logPrefix(level int) string {
-	timestamp := colors.Black(time.Now().Format(TIME_FORMAT))
+func (l *logger) logPrefix(level int, timestamp time.Time) string {
 	//hostID := "[" + colors.White(l.hostID) + "]"
 
 	// return l.logLevelPrefix(level) + " " + timestamp + " " + hostID
-	return l.logLevelPrefix(level) + " " + timestamp
+	return l.logLevelPrefix(level) + " " + colors.Black(timestamp.Format(TIME_FORMAT))
 }
 
 func (l *logger) severity(level int) string {
@@ -173,21 +172,25 @@ func (l *logger) priority(level int) string {
 
 func (l *logger) log(level int, args ...interface{}) {
 	if level >= l.logLevel {
-		all := append([]interface{}{l.logPrefix(level)}, args...)
+		timestamp := time.Now()
+		
+		all := append([]interface{}{l.logPrefix(level, timestamp)}, args...)
 		fmt.Println(all...)
 
 		if l.slackLogger != nil {
-			l.slackLog(level, fmt.Sprint(all...))
+			l.slackLog(level, timestamp, fmt.Sprint(all...))
 		}
 	}
 }
 
 func (l *logger) logf(level int, format string, args ...interface{}) {
 	if level >= l.logLevel {
-		fmt.Println(l.logPrefix(level), fmt.Sprintf(format, args...))
+		timestamp := time.Now()
+
+		fmt.Println(l.logPrefix(level, timestamp), fmt.Sprintf(format, args...))
 
 		if l.slackLogger != nil {
-			l.slackLog(level, fmt.Sprintf(format, args...))
+			l.slackLog(level, timestamp, fmt.Sprintf(format, args...))
 		}
 	}
 }
