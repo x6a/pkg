@@ -173,12 +173,12 @@ func (l *logger) priority(level int) string {
 func (l *logger) log(level int, args ...interface{}) {
 	if level >= l.logLevel {
 		timestamp := time.Now()
-		
+
 		all := append([]interface{}{l.logPrefix(level, timestamp)}, args...)
 		fmt.Println(all...)
 
 		if l.slackLogger != nil {
-			l.slackLog(level, timestamp, fmt.Sprint(all...))
+			l.slackLog(level, timestamp, fmt.Sprint(args...))
 		}
 	}
 }
