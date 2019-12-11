@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/nlopes/slack"
-	"github.com/x6a/pkg/errors"
+	"x6a.dev/pkg/errors"
 )
 
 func (l *logger) slackMsgTitle(level int, timestamp time.Time) string {

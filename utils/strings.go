@@ -18,6 +18,8 @@ package utils
 import (
 	"math/rand"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 // RandString generates a random ASCII string with at least one digit
@@ -41,4 +43,8 @@ func RandString(length int) string {
 	})
 
 	return string(buf) // E.g. "3i[g0|)z"
+}
+
+func GetID() string {
+	return uuid.Must(uuid.NewV4(), nil).String()
 }

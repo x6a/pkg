@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
-	"github.com/x6a/pkg/colors"
+	"x6a.dev/pkg/colors"
 )
 
 const TIME_FORMAT = "2006-01-02 15:04:05.000"

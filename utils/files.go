@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/x6a/pkg/errors"
+	"x6a.dev/pkg/errors"
 )
 
 // FileToB64 read and convert a file to base64
