@@ -68,7 +68,11 @@ func RedisSMAdd(s string, v ...string) (int, error) {
 	c := Pool.Get()
 	defer c.Close()
 
-	reply, err := redis.Int(c.Do("SADD", s, v))
+	var args []string
+	args = append(args, s)
+	args = append(args, v...)
+
+	reply, err := redis.Int(c.Do("SADD", args))
 	if err != nil {
 		return -1, errors.Wrapf(err, "[%v] error from redis cmd SADD set (%v), value (%v)", errors.Trace(), s, v)
 	}
