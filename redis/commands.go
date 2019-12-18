@@ -64,7 +64,29 @@ func RedisSAdd(s, v string) (int, error) {
 	return reply, nil
 }
 
+func RedisSMAdd(s string, v ...string) (int, error) {
+	c := Pool.Get()
+	defer c.Close()
+
+	reply, err := redis.Int(c.Do("SADD", s, v))
+	if err != nil {
+		return -1, errors.Wrapf(err, "[%v] error from redis cmd SADD set (%v), value (%v)", errors.Trace(), s, v)
+	}
+	return reply, nil
+}
+
 func RedisSRem(s, v string) (int, error) {
+	c := Pool.Get()
+	defer c.Close()
+
+	reply, err := redis.Int(c.Do("SREM", s, v))
+	if err != nil {
+		return -1, errors.Wrapf(err, "[%v] error from redis cmd SREM set (%v), value (%v)", errors.Trace(), s, v)
+	}
+	return reply, nil
+}
+
+func RedisSMRem(s string, v ...string) (int, error) {
 	c := Pool.Get()
 	defer c.Close()
 
