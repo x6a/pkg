@@ -68,14 +68,21 @@ func RedisSMAdd(s string, v ...string) (int, error) {
 	c := Pool.Get()
 	defer c.Close()
 
-	var args []string
-	args = append(args, s)
-	args = append(args, v...)
-
-	reply, err := redis.Int(c.Do("SADD", args))
-	if err != nil {
-		return -1, errors.Wrapf(err, "[%v] error from redis cmd SADD set (%v), value (%v)", errors.Trace(), s, v)
+	for _, i := range v {
+		if err := c.Send("SADD", s, i); err != nil {
+			return -1, errors.Wrapf(err, "[%v] error from redis cmd SREM set (%v), value (%v)", errors.Trace(), s, i)
+		}
 	}
+
+	if err := c.Flush(); err != nil {
+		return -1, errors.Wrapf(err, "[%v] function c.Flush()", errors.Trace())
+	}
+
+	reply, err := redis.Int(c.Receive())
+	if err != nil {
+		return -1, errors.Wrapf(err, "[%v] function c.Receive()", errors.Trace())
+	}
+
 	return reply, nil
 }
 
@@ -94,10 +101,21 @@ func RedisSMRem(s string, v ...string) (int, error) {
 	c := Pool.Get()
 	defer c.Close()
 
-	reply, err := redis.Int(c.Do("SREM", s, v))
-	if err != nil {
-		return -1, errors.Wrapf(err, "[%v] error from redis cmd SREM set (%v), value (%v)", errors.Trace(), s, v)
+	for _, i := range v {
+		if err := c.Send("SREM", s, i); err != nil {
+			return -1, errors.Wrapf(err, "[%v] error from redis cmd SREM set (%v), value (%v)", errors.Trace(), s, i)
+		}
 	}
+
+	if err := c.Flush(); err != nil {
+		return -1, errors.Wrapf(err, "[%v] function c.Flush()", errors.Trace())
+	}
+
+	reply, err := redis.Int(c.Receive())
+	if err != nil {
+		return -1, errors.Wrapf(err, "[%v] function c.Receive()", errors.Trace())
+	}
+
 	return reply, nil
 }
 
