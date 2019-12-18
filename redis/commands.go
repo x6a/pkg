@@ -20,6 +20,19 @@ import (
 	"x6a.dev/pkg/errors"
 )
 
+func redisFlushInt(c redis.Conn) (int, error) {
+	if err := c.Flush(); err != nil {
+		return -1, errors.Wrapf(err, "[%v] function c.Flush()", errors.Trace())
+	}
+
+	reply, err := redis.Int(c.Receive())
+	if err != nil {
+		return -1, errors.Wrapf(err, "[%v] function c.Receive()", errors.Trace())
+	}
+
+	return reply, nil
+}
+
 func RedisHMSet(h string, m map[string]string) (string, error) {
 	c := Pool.Get()
 	defer c.Close()
@@ -74,16 +87,7 @@ func RedisSMAdd(s string, v ...string) (int, error) {
 		}
 	}
 
-	if err := c.Flush(); err != nil {
-		return -1, errors.Wrapf(err, "[%v] function c.Flush()", errors.Trace())
-	}
-
-	reply, err := redis.Int(c.Receive())
-	if err != nil {
-		return -1, errors.Wrapf(err, "[%v] function c.Receive()", errors.Trace())
-	}
-
-	return reply, nil
+	return redisFlushInt(c)
 }
 
 func RedisSRem(s, v string) (int, error) {
@@ -107,16 +111,7 @@ func RedisSMRem(s string, v ...string) (int, error) {
 		}
 	}
 
-	if err := c.Flush(); err != nil {
-		return -1, errors.Wrapf(err, "[%v] function c.Flush()", errors.Trace())
-	}
-
-	reply, err := redis.Int(c.Receive())
-	if err != nil {
-		return -1, errors.Wrapf(err, "[%v] function c.Receive()", errors.Trace())
-	}
-
-	return reply, nil
+	return redisFlushInt(c)
 }
 
 func RedisSPop(s string) (string, error) {
