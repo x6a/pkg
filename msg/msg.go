@@ -48,7 +48,7 @@ var msgColorFuncs = map[int]func(string) string{
 	WARN:  ansi.ColorFunc("yellow+b"),
 	ERROR: ansi.ColorFunc("red+bh"),
 	ALERT: ansi.ColorFunc("white+bh:red"),
-	FATAL: ansi.ColorFunc("red+Bbh"),
+	FATAL: ansi.ColorFunc("red+Bb"),
 }
 
 func msgLevelPrefix(level int) string {
