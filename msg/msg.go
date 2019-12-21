@@ -38,7 +38,7 @@ var msgPrefixes = map[int]string{
 }
 
 var msgColorFuncs = map[int]func(string) string{
-	DEBUG: ansi.ColorFunc("white+bh:cyan"),
+	DEBUG: ansi.ColorFunc("black+bh:cyan"),
 	INFO:  ansi.ColorFunc("white+bh:blue"),
 	WARN:  ansi.ColorFunc("white+bh:yellow"),
 	ERROR: ansi.ColorFunc("white+bh:red"),
