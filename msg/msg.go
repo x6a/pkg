@@ -22,33 +22,27 @@ import (
 )
 
 const (
-	TRACE = iota
-	DEBUG
+	DEBUG = iota
 	INFO
 	WARN
 	ERROR
 	ALERT
-	FATAL
 )
 
 var msgPrefixes = map[int]string{
-	TRACE: "trace",
 	DEBUG: "debug",
 	INFO:  "info",
 	WARN:  "warning",
 	ERROR: "error",
 	ALERT: "alert",
-	FATAL: "fatal",
 }
 
 var msgColorFuncs = map[int]func(string) string{
-	TRACE: ansi.ColorFunc("magenta+bh"),
 	DEBUG: ansi.ColorFunc("blue+b"),
-	INFO:  ansi.ColorFunc("blue+bh"),
-	WARN:  ansi.ColorFunc("yellow+b"),
-	ERROR: ansi.ColorFunc("red+bh"),
-	ALERT: ansi.ColorFunc("white+bh:red"),
-	FATAL: ansi.ColorFunc("red+ib"),
+	INFO:  ansi.ColorFunc("white+bh:blue"),
+	WARN:  ansi.ColorFunc("white+bh:yellow"),
+	ERROR: ansi.ColorFunc("white+bh:red"),
+	ALERT: ansi.ColorFunc("white+bh:magenta"),
 }
 
 func msgLevelPrefix(level int) string {
@@ -66,10 +60,6 @@ func msg(level int, args ...interface{}) {
 func msgf(level int, format string, args ...interface{}) {
 	fmt.Println()
 	fmt.Println(msgLevelPrefix(level), fmt.Sprintf(format, args...))
-}
-
-func Trace(args ...interface{}) {
-	msg(TRACE, args...)
 }
 
 func Debug(args ...interface{}) {
@@ -92,14 +82,6 @@ func Alert(args ...interface{}) {
 	msg(ALERT, args...)
 }
 
-func Fatal(args ...interface{}) {
-	msg(FATAL, args...)
-}
-
-func Tracef(format string, args ...interface{}) {
-	msgf(TRACE, format, args...)
-}
-
 func Debugf(format string, args ...interface{}) {
 	msgf(DEBUG, format, args...)
 }
@@ -118,8 +100,4 @@ func Errorf(format string, args ...interface{}) {
 
 func Alertf(format string, args ...interface{}) {
 	msgf(ALERT, format, args...)
-}
-
-func Fatalf(format string, args ...interface{}) {
-	msgf(FATAL, format, args...)
 }
