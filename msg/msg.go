@@ -59,10 +59,12 @@ func msgLevelPrefix(level int) string {
 
 func msg(level int, args ...interface{}) {
 	all := append([]interface{}{msgLevelPrefix(level)}, args...)
+	fmt.Println()
 	fmt.Println(all...)
 }
 
 func msgf(level int, format string, args ...interface{}) {
+	fmt.Println()
 	fmt.Println(msgLevelPrefix(level), fmt.Sprintf(format, args...))
 }
 
