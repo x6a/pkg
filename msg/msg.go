@@ -32,13 +32,13 @@ const (
 )
 
 var msgPrefixes = map[int]string{
-	TRACE: "Trace",
-	DEBUG: "Debug",
-	INFO:  "Info",
-	WARN:  "Warning",
-	ERROR: "Error",
-	ALERT: "Alert",
-	FATAL: "Fatal",
+	TRACE: "trace",
+	DEBUG: "debug",
+	INFO:  "info",
+	WARN:  "warning",
+	ERROR: "error",
+	ALERT: "alert",
+	FATAL: "fatal",
 }
 
 var msgColorFuncs = map[int]func(string) string{
@@ -48,11 +48,11 @@ var msgColorFuncs = map[int]func(string) string{
 	WARN:  ansi.ColorFunc("yellow+b"),
 	ERROR: ansi.ColorFunc("red+bh"),
 	ALERT: ansi.ColorFunc("white+bh:red"),
-	FATAL: ansi.ColorFunc("black+Bbh:red+h"),
+	FATAL: ansi.ColorFunc("red+Bbh"),
 }
 
 func msgLevelPrefix(level int) string {
-	prefix := msgPrefixes[level] + ":"
+	prefix := "[" + msgPrefixes[level] + "]"
 
 	return msgColorFuncs[level](prefix)
 }
