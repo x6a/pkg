@@ -24,6 +24,7 @@ import (
 const (
 	DEBUG = iota
 	INFO
+	OK
 	WARN
 	ERROR
 	ALERT
@@ -32,6 +33,7 @@ const (
 var msgPrefixes = map[int]string{
 	DEBUG: "debug",
 	INFO:  "info",
+	OK:    "ok",
 	WARN:  "warning",
 	ERROR: "error",
 	ALERT: "alert",
@@ -40,6 +42,7 @@ var msgPrefixes = map[int]string{
 var msgColorFuncs = map[int]func(string) string{
 	DEBUG: ansi.ColorFunc("white+bh:black"),
 	INFO:  ansi.ColorFunc("white+bh:blue"),
+	OK:    ansi.ColorFunc("white+bh:green"),
 	WARN:  ansi.ColorFunc("white+bh:yellow"),
 	ERROR: ansi.ColorFunc("white+bh:red"),
 	ALERT: ansi.ColorFunc("white+bh:magenta"),
@@ -70,6 +73,10 @@ func Info(args ...interface{}) {
 	msg(INFO, args...)
 }
 
+func Ok(args ...interface{}) {
+	msg(OK, args...)
+}
+
 func Warn(args ...interface{}) {
 	msg(WARN, args...)
 }
@@ -88,6 +95,10 @@ func Debugf(format string, args ...interface{}) {
 
 func Infof(format string, args ...interface{}) {
 	msgf(INFO, format, args...)
+}
+
+func Okf(format string, args ...interface{}) {
+	msgf(OK, format, args...)
 }
 
 func Warnf(format string, args ...interface{}) {
