@@ -36,7 +36,7 @@ var msgPrefixes = map[int]string{
 	TRACE: "trace",
 	DEBUG: "debug",
 	INFO:  " info",
-	OK:    "  ok ",
+	OK:    " o k ",
 	FAIL:  " fail",
 	WARN:  " warn",
 	ERROR: "error",
@@ -44,8 +44,8 @@ var msgPrefixes = map[int]string{
 }
 
 var msgColorFuncs = map[int]func(string) string{
-	TRACE: ansi.ColorFunc("white+bh:cyan"),
-	DEBUG: ansi.ColorFunc("white+bh:black"),
+	TRACE: ansi.ColorFunc("white+bh:black"),
+	DEBUG: ansi.ColorFunc("white+bh:cyan"),
 	INFO:  ansi.ColorFunc("white+bh:blue"),
 	OK:    ansi.ColorFunc("white+bh:green"),
 	FAIL:  ansi.ColorFunc("white+bh:red"),
