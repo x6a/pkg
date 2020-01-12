@@ -26,11 +26,8 @@ import (
 	"x6a.dev/pkg/errors"
 )
 
-// Key is the crypto key needed to encrypt and decrypt
-var Key []byte
-
-// Encrypt encrypts string to base64 crypto using AES
-func Encrypt(text string) (string, error) {
+// EncryptCFB encrypts string to base64 crypto using AES-CFB
+func EncryptCFB(text string) (string, error) {
 	if len(Key) == 0 {
 		return "", errors.New("no crypto key found")
 	}
@@ -57,8 +54,8 @@ func Encrypt(text string) (string, error) {
 	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
 
-// Decrypt decrypts from base64 to decrypted string
-func Decrypt(cryptoText string) (string, error) {
+// DecryptCFB decrypts from base64 to decrypted string
+func DecryptCFB(cryptoText string) (string, error) {
 	if len(Key) == 0 {
 		return "", errors.New("no crypto key found")
 	}
