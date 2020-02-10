@@ -1,4 +1,4 @@
-// Copyright © 2019 <x6a@7n.io>
+// Copyright © 2019 x6a
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -270,6 +270,10 @@ func Errorf(format string, args ...interface{}) error {
 
 func Wrapf(err error, format string, args ...interface{}) error {
 	return errors.Wrapf(err, format, args...)
+}
+
+func Cause(err error) error {
+	return errors.Cause(err)
 }
 
 func Errs(errs []error) error {
