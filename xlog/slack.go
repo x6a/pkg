@@ -1,4 +1,4 @@
-// Copyright (C) 2019 <x6a@7n.io>
+// Copyright (C) 2019 x6a
 //
 // pkg is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -24,12 +24,12 @@ import (
 	"x6a.dev/pkg/errors"
 )
 
-func (l *logger) slackMsgTitle(level int, timestamp time.Time) string {
+func (l *logger) slackMsgTitle(level LogLevel, timestamp time.Time) string {
 	return "[" + l.severity(level) + "] " + timestamp.Format(TIME_FORMAT) + " @" + l.hostID
 }
 
-func (l *logger) slackLog(level int, timestamp time.Time, msg string) error {
-	if l.slackLogger.channels[level] == "" {
+func (l *logger) slackLog(level LogLevel, timestamp time.Time, msg string) error {
+	if len(l.slackLogger.channels[level]) == 0 {
 		return nil
 	}
 
@@ -43,7 +43,7 @@ func (l *logger) slackLog(level int, timestamp time.Time, msg string) error {
 		Fields: []slack.AttachmentField{
 			{
 				Title: "Priority",
-				Value: l.priority(level),
+				Value: string(l.priority(level)),
 				Short: true,
 			},
 			{

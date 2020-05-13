@@ -1,4 +1,4 @@
-// Copyright (C) 2019 <x6a@7n.io>
+// Copyright (C) 2019 x6a
 //
 // pkg is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -26,8 +26,10 @@ import (
 
 const TIME_FORMAT = "2006-01-02 15:04:05.000"
 
+type LogLevel int
+
 const (
-	TRACE = iota
+	TRACE LogLevel = iota
 	DEBUG
 	INFO
 	WARN
@@ -35,10 +37,12 @@ const (
 	ALERT
 )
 
+type Priority string
+
 const (
-	LOW    = "LOW"
-	MEDIUM = "MEDIUM"
-	HIGH   = "HIGH"
+	LOW    Priority = "LOW"
+	MEDIUM Priority = "MEDIUM"
+	HIGH   Priority = "HIGH"
 )
 
 const (
@@ -51,9 +55,9 @@ type slackLoggerCfg struct {
 	webhook  string
 	user     string
 	icon     string
-	logLevel int
-	channels map[int]string
-	colors   map[int]string
+	logLevel LogLevel
+	channels map[LogLevel]string
+	colors   map[LogLevel]string
 }
 
 type LogOption struct {
@@ -62,14 +66,14 @@ type LogOption struct {
 }
 
 type logger struct {
-	logLevel int
+	logLevel LogLevel
 	hostID   string
 
 	slackLogger *slackLoggerCfg
 	outputFile  string
 }
 
-var logPrefixes = map[int]string{
+var logPrefixes = map[LogLevel]string{
 	TRACE: "trace",
 	DEBUG: "debug",
 	INFO:  " info",
@@ -78,7 +82,7 @@ var logPrefixes = map[int]string{
 	ALERT: "alert",
 }
 
-var logPriorities = map[int]string{
+var logPriorities = map[LogLevel]Priority{
 	TRACE: LOW,
 	DEBUG: LOW,
 	INFO:  LOW,
@@ -87,7 +91,7 @@ var logPriorities = map[int]string{
 	ALERT: HIGH,
 }
 
-var logColorFuncs = map[int]func(string) string{
+var logColorFuncs = map[LogLevel]func(string) string{
 	TRACE: ansi.ColorFunc("magenta+bh"),
 	DEBUG: ansi.ColorFunc("blue+b"),
 	INFO:  ansi.ColorFunc("blue+bh"),
@@ -100,7 +104,7 @@ var l = &logger{
 	logLevel: INFO,
 }
 
-func SetLogger(level int, hostID string, logOpts ...*LogOption) {
+func SetLogger(level LogLevel, hostID string, logOpts ...*LogOption) {
 	logger := &logger{
 		logLevel: level,
 		hostID:   hostID,
@@ -110,23 +114,36 @@ func SetLogger(level int, hostID string, logOpts ...*LogOption) {
 	l = logger
 }
 
-func WithSlack(level int, webhook, user, icon, traceChannel, debugChannel, infoChannel, warnChannel, errorChannel, alertChannel string) *LogOption {
+type SlackOption struct {
+	Level        LogLevel
+	Webhook      string
+	User         string
+	Icon         string
+	TraceChannel string
+	DebugChannel string
+	InfoChannel  string
+	WarnChannel  string
+	ErrorChannel string
+	AlertChannel string
+}
+
+func WithSlack(opt *SlackOption) *LogOption {
 	return &LogOption{
 		key: logOptionSlack,
 		value: &slackLoggerCfg{
-			webhook:  webhook,
-			user:     user,
-			icon:     icon,
-			logLevel: level,
-			channels: map[int]string{
-				TRACE: traceChannel,
-				DEBUG: debugChannel,
-				INFO:  infoChannel,
-				WARN:  warnChannel,
-				ERROR: errorChannel,
-				ALERT: alertChannel,
+			webhook:  opt.Webhook,
+			user:     opt.User,
+			icon:     opt.Icon,
+			logLevel: opt.Level,
+			channels: map[LogLevel]string{
+				TRACE: opt.TraceChannel,
+				DEBUG: opt.DebugChannel,
+				INFO:  opt.InfoChannel,
+				WARN:  opt.WarnChannel,
+				ERROR: opt.ErrorChannel,
+				ALERT: opt.AlertChannel,
 			},
-			colors: map[int]string{
+			colors: map[LogLevel]string{
 				TRACE: "#ff77ff",
 				DEBUG: "#444999",
 				INFO:  "#009999",
@@ -149,28 +166,28 @@ func (l *logger) setOptions(logOpts ...*LogOption) {
 	}
 }
 
-func (l *logger) logLevelPrefix(level int) string {
+func (l *logger) logLevelPrefix(level LogLevel) string {
 	prefix := "[" + logPrefixes[level] + "]"
 
 	return logColorFuncs[level](prefix)
 }
 
-func (l *logger) logPrefix(level int, timestamp time.Time) string {
+func (l *logger) logPrefix(level LogLevel, timestamp time.Time) string {
 	//hostID := "[" + colors.White(l.hostID) + "]"
 
 	// return l.logLevelPrefix(level) + " " + timestamp + " " + hostID
 	return l.logLevelPrefix(level) + " " + colors.Black(timestamp.Format(TIME_FORMAT))
 }
 
-func (l *logger) severity(level int) string {
+func (l *logger) severity(level LogLevel) string {
 	return strings.ToUpper(strings.TrimSpace(logPrefixes[level]))
 }
 
-func (l *logger) priority(level int) string {
-	return strings.ToUpper(strings.TrimSpace(logPriorities[level]))
+func (l *logger) priority(level LogLevel) Priority {
+	return logPriorities[level]
 }
 
-func (l *logger) log(level int, args ...interface{}) {
+func (l *logger) log(level LogLevel, args ...interface{}) {
 	if level >= l.logLevel {
 		timestamp := time.Now()
 
@@ -179,13 +196,17 @@ func (l *logger) log(level int, args ...interface{}) {
 
 		if l.slackLogger != nil {
 			if level >= l.slackLogger.logLevel {
-				l.slackLog(level, timestamp, fmt.Sprint(args...))
+				if err := l.slackLog(level, timestamp, fmt.Sprint(args...)); err != nil {
+					slackErr := fmt.Errorf("Unable to post to Slack: %v", err)
+					all := append([]interface{}{l.logPrefix(level, timestamp)}, slackErr)
+					fmt.Println(all...)
+				}
 			}
 		}
 	}
 }
 
-func (l *logger) logf(level int, format string, args ...interface{}) {
+func (l *logger) logf(level LogLevel, format string, args ...interface{}) {
 	if level >= l.logLevel {
 		timestamp := time.Now()
 
@@ -193,7 +214,10 @@ func (l *logger) logf(level int, format string, args ...interface{}) {
 
 		if l.slackLogger != nil {
 			if level >= l.slackLogger.logLevel {
-				l.slackLog(level, timestamp, fmt.Sprintf(format, args...))
+				if err := l.slackLog(level, timestamp, fmt.Sprintf(format, args...)); err != nil {
+					slackErr := fmt.Errorf("Unable to post to Slack: %v", err)
+					fmt.Println(l.logPrefix(level, timestamp), fmt.Sprintf(format, slackErr))
+				}
 			}
 		}
 	}
