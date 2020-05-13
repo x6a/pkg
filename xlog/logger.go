@@ -225,8 +225,7 @@ func (l *logger) log(level LogLevel, args ...interface{}) {
 			if level >= l.slackLogger.logLevel {
 				if err := l.slackLog(level, timestamp, fmt.Sprint(args...)); err != nil {
 					slackErr := fmt.Errorf("Unable to post to Slack: %v", err)
-					all := append([]interface{}{l.logPrefix(level, timestamp)}, slackErr)
-					fmt.Println(all...)
+					fmt.Println(l.logPrefix(level, timestamp), slackErr)
 				}
 			}
 		}
@@ -243,7 +242,7 @@ func (l *logger) logf(level LogLevel, format string, args ...interface{}) {
 			if level >= l.slackLogger.logLevel {
 				if err := l.slackLog(level, timestamp, fmt.Sprintf(format, args...)); err != nil {
 					slackErr := fmt.Errorf("Unable to post to Slack: %v", err)
-					fmt.Println(l.logPrefix(level, timestamp), fmt.Sprintf(format, slackErr))
+					fmt.Println(l.logPrefix(level, timestamp), slackErr)
 				}
 			}
 		}
